@@ -1,0 +1,70 @@
+require 'minitest/autorun'
+require 'minitest/reporters'
+require 'rspec'
+require_relative 'student'
+
+RSpec.describe Student do
+  let(:student1) { Student.new("Bobrovskya", "Elionora", "2006-07-03") }
+  let(:student2) { Student.new("Ivanova", "Karina", "1999-01-01") }
+  let(:duplicate_student) { Student.new("Ivanova", "Karina", "1999-01-01") }
+
+  before(:each) do
+    Student.students.clear  # Очищення списку студентів перед кожним тестом
+    Student.add_student(student1)
+    Student.add_student(student2)
+  end
+
+  describe '#add_student' do
+    it 'додає унікальних студентів до списку' do
+      expect(Student.students).to include(student1, student2)
+      expect(Student.students.size).to eq(2)
+    end
+
+    it 'не додає дублікатів студентів до списку' do
+      Student.add_student(duplicate_student)
+      expect(Student.students.size).to eq(2) # Дублікати не повинні додаватися
+    end
+  end
+
+  describe '#calculate_age' do
+    it 'повертає правильний вік для студента' do
+      expect(student1.calculate_age).to eq(Date.today.year - student1.date_of_birth.year)
+    end
+  end
+
+  describe '.get_students_by_age' do
+    it 'повертає студентів заданого віку' do
+      age = student1.calculate_age
+      students_by_age = Student.get_students_by_age(age)
+      expect(students_by_age).to include(student1)
+    end
+
+    it 'не повертає студентів, якщо жоден не відповідає віку' do
+      expect(Student.get_students_by_age(100)).to be_empty
+    end
+  end
+
+  describe '.get_students_by_name' do
+    it 'повертає студентів з заданим ім'ям' do
+      students_by_name = Student.get_students_by_name("Ivan")
+      expect(students_by_name).to include(student1)
+    end
+
+    it 'не повертає студентів, якщо жоден не відповідає імені' do
+      expect(Student.get_students_by_name("Unknown")).to be_empty
+    end
+  end
+
+  describe '.remove_student' do
+    it 'видаляє студента зі списку' do
+      Student.remove_student(student1)
+      expect(Student.students).not_to include(student1)
+    end
+  end
+
+  describe 'дата народження валідація' do
+    it 'викидає помилку, якщо дата народження в майбутньому' do
+      expect { Student.new("Karinovna", "Karolina", "2027-01-01") }.to raise_error(ArgumentError, "Date of birth must be in the past")
+    end
+  end
+end
