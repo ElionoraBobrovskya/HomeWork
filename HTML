@@ -1,0 +1,66 @@
+require 'minitest/autorun'
+require 'minitest/reporters'
+require_relative 'student'
+
+# Налаштування Minitest для створення HTML-звіту
+Minitest::Reporters.use! Minitest::Reporters::HtmlReporter.new(reports_dir: "./reports")
+
+class StudentTest < Minitest::Test
+  def setup
+    @student1 = Student.new("Ivanova", "Karina", "1999-01-01")
+    @student2 = Student.new("Bobrovskya", "Elionora", "2006-07-03")
+    @duplicate_student = Student.new("Ivanova", "Karina", "1999-01-01")
+    
+    Student.students.clear
+    Student.add_student(@student1)
+    Student.add_student(@student2)
+  end
+
+  def test_add_student_adds_unique_students
+    assert_includes Student.students, @student1
+    assert_includes Student.students, @student2
+    assert_equal 2, Student.students.size
+  end
+
+  def test_add_student_does_not_add_duplicates
+    Student.add_student(@duplicate_student)
+    assert_equal 2, Student.students.size
+  end
+
+  def test_calculate_age_returns_correct_age
+    today = Date.today
+    expected_age = today.year - @student1.date_of_birth.year
+    expected_age -= 1 if today < @student1.date_of_birth + expected_age.years
+    assert_equal expected_age, @student1.calculate_age
+  end
+
+  def test_get_students_by_age_returns_students_of_specified_age
+    age = @student1.calculate_age
+    students_by_age = Student.get_students_by_age(age)
+    assert_includes students_by_age, @student1
+  end
+
+  def test_get_students_by_age_returns_empty_if_no_students_match_age
+    assert_empty Student.get_students_by_age(100)
+  end
+
+  def test_get_students_by_name_returns_students_with_specified_name
+    students_by_name = Student.get_students_by_name("Ivan")
+    assert_includes students_by_name, @student1
+  end
+
+  def test_get_students_by_name_returns_empty_if_no_students_match_name
+    assert_empty Student.get_students_by_name("Unknown")
+  end
+
+  def test_remove_student_removes_student_from_list
+    Student.remove_student(@student1)
+    refute_includes Student.students, @student1
+  end
+
+  def test_initialize_raises_error_if_date_of_birth_in_future
+    assert_raises(ArgumentError) do
+      Student.new("Karinovna", "Karolina", "2027-01-01")
+    end
+  end
+end
